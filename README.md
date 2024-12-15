@@ -8,6 +8,7 @@ This package provides core functionality for implementing multilingual support a
 - Simple language switching via URL prefixes
 - Support for RTL languages
 - Flexible language detection strategies
+- Framework-independent locale management
 
 ## Requirements:
 
@@ -36,7 +37,7 @@ The core package provides several interfaces and base classes:
 - getCode() - returns language code (e.g., 'en', 'ru')
 - getName() - returns language name
 - getLocale() - returns locale code (e.g., 'en_US')
--isRtl() - indicates if language is RTL
+- isRtl() - indicates if language is RTL
 
 ### LanguageManagerInterface - Manages available languages:
 
@@ -50,17 +51,52 @@ The core package provides several interfaces and base classes:
 ### LanguageDetectorInterface - Detects current language from request
 ### UrlGeneratorInterface - Generates URLs with language prefixes
 
-Testing:
+### LocaleManagerInterface - Framework-specific locale management:
+
+- setLocale() - sets the application locale in framework-specific way
+
+## Implementation example
+
+```php
+
+// Create language instances
+$languages = [
+    new Language('en', 'English', 'en_US'),
+    new Language('ru', 'Russian', 'ru_RU', false)
+];
+
+// Implement LocaleManagerInterface for your framework
+class MyFrameworkLocaleManager implements LocaleManagerInterface 
+{
+    public function setLocale(string $locale): void 
+    {
+        // Framework-specific locale setting
+    }
+}
+
+// Create language manager
+$manager = new LanguageManager(
+    new MyFrameworkLocaleManager(),
+    $languages,
+    'en' // default language
+);
+
+// Language switching example
+$manager->setCurrentLanguage('ru'); // Will also set framework locale to ru_RU
+
+```
+
+## Testing:
 ```bash
 composer test
 ```
 
-Code Style:
+## Code Style:
 ```bash
 composer cs-check
 composer cs-fix
 ```
-Static Analysis:
+## Static Analysis:
 ```bash
 composer phpstan
 ```

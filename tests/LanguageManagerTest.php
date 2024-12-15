@@ -5,11 +5,14 @@ namespace rnr1721\MultilingualCore\Tests;
 use PHPUnit\Framework\TestCase;
 use rnr1721\MultilingualCore\{Language, LanguageManager};
 use InvalidArgumentException;
+use PHPUnit\Framework\MockObject\MockObject;
+use rnr1721\MultilingualCore\Contracts\LocaleManagerInterface;
 
 class LanguageManagerTest extends TestCase
 {
     private LanguageManager $manager;
     private array $languages;
+    private LocaleManagerInterface|MockObject $localeManager;
 
     protected function setUp(): void
     {
@@ -17,26 +20,71 @@ class LanguageManagerTest extends TestCase
             new Language('en', 'English', 'en_US'),
             new Language('ru', 'Russian', 'ru_RU')
         ];
-        $this->manager = new LanguageManager($this->languages, 'en');
+
+        // Создаем мок без ожиданий для общего использования
+        $this->localeManager = $this->createMock(LocaleManagerInterface::class);
+        $this->manager = new LanguageManager(
+            $this->localeManager,
+            $this->languages,
+            'en'
+        );
     }
 
     public function testDefaultLanguage(): void
     {
+        // Создаем новый мок специально для этого теста
+        $localeManager = $this->createMock(LocaleManagerInterface::class);
+        $localeManager
+            ->expects($this->once())
+            ->method('setLocale')
+            ->with('en_US');
+
+        new LanguageManager($localeManager, $this->languages, 'en');
+
         $this->assertEquals('en', $this->manager->getDefaultLanguage()->getCode());
     }
 
     public function testCurrentLanguage(): void
     {
-        $this->assertEquals('en', $this->manager->getCurrentLanguage()->getCode());
+        $localeManager = $this->createMock(LocaleManagerInterface::class);
+        $localeManager
+            ->expects($this->exactly(2))
+            ->method('setLocale')
+            ->willReturnCallback(function ($locale) {
+                static $count = 0;
+                $expected = ['en_US', 'ru_RU'];
+                $this->assertEquals($expected[$count], $locale);
+                $count++;
+            });
 
-        $this->manager->setCurrentLanguage('ru');
-        $this->assertEquals('ru', $this->manager->getCurrentLanguage()->getCode());
+        $manager = new LanguageManager($localeManager, $this->languages, 'en');
+        $this->assertEquals('en', $manager->getCurrentLanguage()->getCode());
+
+        $manager->setCurrentLanguage('ru');
+        $this->assertEquals('ru', $manager->getCurrentLanguage()->getCode());
+    }
+
+    public function testLocaleChangeOnLanguageSwitch(): void
+    {
+        $actualCalls = [];
+        $localeManager = $this->createMock(LocaleManagerInterface::class);
+        $localeManager
+            ->expects($this->exactly(2))
+            ->method('setLocale')
+            ->willReturnCallback(function ($locale) use (&$actualCalls) {
+                $actualCalls[] = $locale;
+            });
+
+        $manager = new LanguageManager($localeManager, $this->languages, 'en');
+        $manager->setCurrentLanguage('ru');
+
+        $this->assertEquals(['en_US', 'ru_RU'], $actualCalls);
     }
 
     public function testInvalidDefaultLanguage(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        new LanguageManager($this->languages, 'fr');
+        new LanguageManager($this->localeManager, $this->languages, 'fr');
     }
 
     public function testInvalidCurrentLanguage(): void

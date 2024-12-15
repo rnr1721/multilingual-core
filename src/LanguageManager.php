@@ -4,6 +4,7 @@ namespace rnr1721\MultilingualCore;
 
 use rnr1721\MultilingualCore\Contracts\LanguageInterface;
 use rnr1721\MultilingualCore\Contracts\LanguageManagerInterface;
+use rnr1721\MultilingualCore\Contracts\LocaleManagerInterface;
 
 /**
 * Main implementation of the LanguageManager
@@ -37,15 +38,23 @@ class LanguageManager implements LanguageManagerInterface
     private LanguageInterface $currentLanguage;
 
     /**
+     * Framework-specific locale manager
+     *
+     * @var LocaleManagerInterface
+     */
+    private LocaleManagerInterface $localeManager;
+
+    /**
      * Initialize the language manager
      *
+     * @param LocaleManagerInterface $localeManager Framework implementation of language switcher
      * @param array<LanguageInterface> $languages Array of language instances
      * @param string $defaultLanguageCode Code of the default language
      *
      * @throws \InvalidArgumentException If any language doesn't implement LanguageInterface
      * @throws \InvalidArgumentException If default language is not in available languages
      */
-    public function __construct(array $languages, string $defaultLanguageCode)
+    public function __construct(LocaleManagerInterface $localeManager, array $languages, string $defaultLanguageCode)
     {
         foreach ($languages as $language) {
             if (!$language instanceof LanguageInterface) {
@@ -58,8 +67,11 @@ class LanguageManager implements LanguageManagerInterface
             throw new \InvalidArgumentException('Default language must be in available languages');
         }
 
+        $this->localeManager = $localeManager;
         $this->defaultLanguage = $this->languages[$defaultLanguageCode];
         $this->currentLanguage = $this->defaultLanguage;
+
+        $this->localeManager->setLocale($this->currentLanguage->getLocale());
     }
 
     /**
@@ -87,6 +99,7 @@ class LanguageManager implements LanguageManagerInterface
             throw new \InvalidArgumentException("Language {$code} is not available");
         }
         $this->currentLanguage = $this->languages[$code];
+        $this->localeManager->setLocale($this->currentLanguage->getLocale());
     }
 
     /**
