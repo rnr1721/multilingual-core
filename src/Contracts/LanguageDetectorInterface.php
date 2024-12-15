@@ -2,8 +2,6 @@
 
 namespace rnr1721\MultilingualCore\Contracts;
 
-use Psr\Http\Message\ServerRequestInterface;
-
 /**
 * Interface for detecting the current language from HTTP request
 *
@@ -16,10 +14,8 @@ interface LanguageDetectorInterface
     /**
      * Detects language from the given request
      *
-     * @param ServerRequestInterface $request PSR-7 server request instance
-     *
-     * @return string|null Returns language code (e.g. 'en', 'ru') if detected,
-     *                     or null if no language could be detected
+     * @return string Returns language code (e.g. 'en', 'ru') if detected,
+     *                     or default language if no language could be detected
      */
-    public function detect(ServerRequestInterface $request): ?string;
+    public function detect(): string;
 }
